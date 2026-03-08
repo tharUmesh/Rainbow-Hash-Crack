@@ -1,0 +1,9 @@
+Compile the Serial code:
+
+g++ -O3 serial_cracker.cpp -o ../../bin/serial_cracker -lcrypto
+
+Run the Serial executable for password "hpc1":
+
+../../bin/serial_cracker 4 560ef0e55e00aa6b52df797d53d381c5a6e4255f92501c051c43c26989bdff55
+
+
