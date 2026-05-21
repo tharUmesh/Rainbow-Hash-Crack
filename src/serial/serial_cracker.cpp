@@ -1,42 +1,11 @@
 #include <iostream>
 #include <string>
 #include <vector>
-#include <iomanip>
-#include <sstream>
 #include <chrono>
-#include <openssl/evp.h> 
+#include "../../include/common.h"
 
 using namespace std;
 using namespace std::chrono;
-
-const string CHARSET = "abcdefghijklmnopqrstuvwxyz0123456789";
-const int CHARSET_SIZE = CHARSET.length();
-
-
-string sha256(const string str) {
-    unsigned char hash[EVP_MAX_MD_SIZE];
-    unsigned int lengthOfHash = 0;
-
-    
-    EVP_MD_CTX* context = EVP_MD_CTX_new();
-    
-    if (context != nullptr) {
-        EVP_DigestInit_ex(context, EVP_sha256(), nullptr);
-        EVP_DigestUpdate(context, str.c_str(), str.size());
-        EVP_DigestFinal_ex(context, hash, &lengthOfHash);
-        
-        
-        EVP_MD_CTX_free(context);
-    }
-
-
-    stringstream ss;
-    for (unsigned int i = 0; i < lengthOfHash; i++) {
-        ss << hex << setw(2) << setfill('0') << (int)hash[i];
-    }
-    return ss.str();
-}
-
 
 bool bruteForceSerial(const string& target_hash, int length) {
     vector<int> indices(length, 0);
@@ -81,7 +50,15 @@ int main(int argc, char* argv[]) {
     }
 
     int length = stoi(argv[1]);
-    string target_hash = argv[2];
+    if (length <= 0) {
+        cerr << "Error: length must be a positive integer." << endl;
+        return 1;
+    }
+    string target_hash = normaliseHash(argv[2]);
+    if (!isValidSHA256(target_hash)) {
+        cerr << "Error: target hash must be a 64-character hex SHA-256 string." << endl;
+        return 1;
+    }
 
     cout << "--- Serial Brute-Force Cracker ---" << endl;
     cout << "Target Hash: " << target_hash << endl;
@@ -90,7 +67,12 @@ int main(int argc, char* argv[]) {
     cout << "Cracking in progress... Please wait." << endl;
 
     auto start = high_resolution_clock::now();
-    bruteForceSerial(target_hash, length);
+    try {
+        bruteForceSerial(target_hash, length);
+    } catch (const exception& e) {
+        cerr << "Fatal error: " << e.what() << endl;
+        return 1;
+    }
     auto stop = high_resolution_clock::now();
     
     auto duration = duration_cast<milliseconds>(stop - start);
