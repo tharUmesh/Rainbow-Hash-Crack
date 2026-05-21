@@ -7,3 +7,4 @@ Run the Serial executable for password "hpc1":
 ../../bin/serial_cracker 4 560ef0e55e00aa6b52df797d53d381c5a6e4255f92501c051c43c26989bdff55
 
 
+../../bin/serial_cracker 4 9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08

@@ -1,2 +1,19 @@
-./bin/*
+# Compiled executables
 bin/
+ 
+# Large rainbow table files
+*.rt
+*.rtc
+*.rtt
+src/rainbow/tables/
+ 
+# Benchmark results (optional — commit if you want to track them)
+results/
+ 
+# Build artifacts
+*.o
+*.d
+ 
+# OS junk
+.DS_Store
+Thumbs.db
