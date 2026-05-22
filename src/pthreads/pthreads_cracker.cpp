@@ -13,6 +13,7 @@ using namespace std::chrono;
 // Global flag so all threads stop if one finds the password
 atomic<bool> global_found(false);
 string cracked_password = "";
+pthread_mutex_t found_mutex = PTHREAD_MUTEX_INITIALIZER;
 atomic<long long> total_global_attempts(0);
 
 // Structure to pass arguments to our POSIX threads
@@ -45,8 +46,12 @@ void* bruteForceWorker(void* arguments) {
 
         // 2. Hash and Compare
         if (sha256(current_guess) == args->target_hash) {
-            cracked_password = current_guess;
-            global_found = true; // Signal other threads to stop
+            pthread_mutex_lock(&found_mutex);
+            if (!global_found) {          // double-check inside the lock
+                cracked_password = current_guess;
+                global_found = true;
+            }
+            pthread_mutex_unlock(&found_mutex);
             break;
         }
 
@@ -88,30 +93,29 @@ int main(int argc, char* argv[]) {
     auto start_time = high_resolution_clock::now();
 
     // Array to hold thread identifiers and arguments
-    pthread_t threads[num_threads];
-    ThreadArgs thread_args[num_threads];
+    vector<pthread_t> threads(num_threads);
+    vector<ThreadArgs> thread_args(num_threads);
 
     // Calculate how many starting characters each thread gets
     int chars_per_thread = ceil((double)CHARSET_SIZE / num_threads);
 
+    // AFTER (creation loop):
+    int threads_created = 0;
     for (int i = 0; i < num_threads; i++) {
         thread_args[i].thread_id = i;
         thread_args[i].start_idx = i * chars_per_thread;
         thread_args[i].end_idx = min((i + 1) * chars_per_thread, CHARSET_SIZE);
         thread_args[i].length = length;
         thread_args[i].target_hash = target_hash;
-
-        // Ensure we don't spawn threads that have no characters assigned
         if (thread_args[i].start_idx < CHARSET_SIZE) {
             pthread_create(&threads[i], NULL, bruteForceWorker, (void*)&thread_args[i]);
+            threads_created++;
         }
     }
 
-    // Wait for all threads to complete
-    for (int i = 0; i < num_threads; i++) {
-        if (thread_args[i].start_idx < CHARSET_SIZE) {
-            pthread_join(threads[i], NULL);
-        }
+    // AFTER (join loop):
+    for (int i = 0; i < threads_created; i++) {
+        pthread_join(threads[i], NULL);
     }
 
     auto stop_time = high_resolution_clock::now();
